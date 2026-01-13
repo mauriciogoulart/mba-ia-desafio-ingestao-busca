@@ -67,6 +67,11 @@ ANSWER: I do not have enough information to answer this question.
 - **LLM Model**: `gemini-2.5-flash-lite`
 - *Requires a Google API Key*
 
+### Ollama 
+- **Embeddings Model**: `text-embedding-004`
+- **LLM Model**: `llama3.2:3b`
+- *Uses the Gemini embeddings*
+
 ## ⚙️ Functional Requirements
 
 ### 1. PDF Ingestion
@@ -104,6 +109,8 @@ OPENAI_API_KEY=your_openai_api_key_here
 # or
 GOOGLE_API_KEY=your_google_api_key_here
 ```
+
+Configure the MODEL_PROVIDER openai, gemini or ollama.
 
 ### 3. Start PostgreSQL with pgVector
 ```bash
