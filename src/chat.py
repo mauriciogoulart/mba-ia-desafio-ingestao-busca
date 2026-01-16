@@ -3,63 +3,62 @@ import os
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
-from langchain_postgres import PGVector
 
 # Add project root to Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from config import Settings
-from embeddings import create_embeddings
 from llm import create_llm
-from search import PROMPT_TEMPLATE
+from search import PROMPT_TEMPLATE, SemanticSearchService
 
 
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 
-def main():
-    model_config = Settings.model_config()
-    embeddings = create_embeddings(model_config)
-    llm = create_llm(model_config)
+class ChatService:
+    def __init__(self):
+        self._model_config = Settings.model_config()
+        self._llm = create_llm(self._model_config)
+        self._search_service = SemanticSearchService(self._model_config)
+        self._rag_chain = self._create_rag_chain()
 
-    vectorstore = PGVector(
-        embeddings=embeddings,
-        collection_name=Settings.PG_VECTOR_COLLECTION_NAME,
-        connection=Settings.DATABASE_URL,
-    )
+    def _create_rag_chain(self):
+        retriever = self._search_service.get_retriever()
+        prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
 
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
+        return (
+            {"contexto": retriever | format_docs, "pergunta": RunnablePassthrough()}
+            | prompt
+            | self._llm
+            | StrOutputParser()
+        )
 
-    prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+    def run(self):
+        print("Bem-vindo ao chat! Digite 'sair' para terminar.")
+        while True:
+            try:
+                question = input("Sua pergunta: ")
+                if question.lower() == "sair":
+                    print("Até logo!")
+                    break
 
-    rag_chain = (
-        {"contexto": retriever | format_docs, "pergunta": RunnablePassthrough()}
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
+                if not question.strip():
+                    continue
 
-    print("Bem-vindo ao chat! Digite 'sair' para terminar.")
+                print("\nResposta:")
+                for chunk in self._rag_chain.stream(question):
+                    print(chunk, end="", flush=True)
+                print("\n")
 
-    while True:
-        try:
-            question = input("Sua pergunta: ")
-            if question.lower() == "sair":
-                print("Até logo!")
+            except (KeyboardInterrupt, EOFError):
+                print("\n\nAté logo!")
                 break
 
-            if not question.strip():
-                continue
 
-            print("\nResposta:")
-            for chunk in rag_chain.stream(question):
-                print(chunk, end="", flush=True)
-            print("\n")
-
-        except (KeyboardInterrupt, EOFError):
-            print("\n\nAté logo!")
-            break
+def main():
+    chat_service = ChatService()
+    chat_service.run()
 
 
 if __name__ == "__main__":

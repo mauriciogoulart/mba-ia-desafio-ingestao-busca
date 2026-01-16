@@ -1,3 +1,9 @@
+from langchain_postgres import PGVector
+
+from config import Settings
+from embeddings import create_embeddings
+
+
 PROMPT_TEMPLATE = """
 CONTEXTO:
 {contexto}
@@ -25,5 +31,16 @@ PERGUNTA DO USUÁRIO:
 RESPONDA A "PERGUNTA DO USUÁRIO"
 """
 
-def search_prompt(question=None):
-    pass
+
+class SemanticSearchService:
+    def __init__(self, model_config):
+        self._model_config = model_config
+        self._embeddings = create_embeddings(self._model_config)
+        self._vectorstore = PGVector(
+            embeddings=self._embeddings,
+            collection_name=Settings.PG_VECTOR_COLLECTION_NAME,
+            connection=Settings.DATABASE_URL,
+        )
+
+    def get_retriever(self, search_kwargs={"k": 10}):
+        return self._vectorstore.as_retriever(search_kwargs=search_kwargs)
