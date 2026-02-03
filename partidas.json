@@ -1,0 +1,16 @@
+[
+    {
+        "campeonato": "Brasileirão 2024",
+        "mandante": "Flamengo",
+        "visitante": "Vasco",
+        "gols_mandante": 2,
+        "gols_visitante": 1
+    },
+    {
+        "campeonato": "Brasileirão 2024",
+        "mandante": "Palmeiras",
+        "visitante": "Corinthians",
+        "gols_mandante": 0,
+        "gols_visitante": 0
+    }
+]
