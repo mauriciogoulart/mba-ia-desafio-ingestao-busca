@@ -83,3 +83,29 @@ class DatabaseManager:
                 # Insere novo
                 query = "INSERT INTO classificacao (campeonato, time, vitorias, empates, derrotas, gols_pro, gols_cedidos) VALUES (%s, %s, %s, %s, %s, %s, %s)"
                 cur.execute(query, (campeonato, time, vitoria, empate, derrota, gols_pro, gols_cedidos))
+
+    def listar_partidas_time(self, time: str):
+        query = """
+            SELECT * FROM partidas 
+            WHERE mandante = %s OR visitante = %s
+        """
+        with self.conn.cursor() as cur:
+            cur.execute(query, (time, time))
+            return cur.fetchall()
+
+    def obter_classificacao_time(self, time: str):
+        query = "SELECT * FROM classificacao WHERE time = %s"
+        with self.conn.cursor() as cur:
+            cur.execute(query, (time,))
+            return cur.fetchone()
+
+    def obter_classificacao_geral(self):
+        # Ordenar por pontos (vitorias * 3 + empates) e depois saldo de gols (gols_pro - gols_cedidos)
+        query = """
+            SELECT *, (vitorias * 3 + empates) as pontos, (gols_pro - gols_cedidos) as saldo_gols 
+            FROM classificacao 
+            ORDER BY pontos DESC, saldo_gols DESC, gols_pro DESC
+        """
+        with self.conn.cursor() as cur:
+            cur.execute(query)
+            return cur.fetchall()
